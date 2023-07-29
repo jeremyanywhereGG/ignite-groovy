@@ -32,41 +32,52 @@ move_dict = [
     'right_col_rot': [[12, 35], [13, 34], [14, 33], [35, 12], [34, 13], [33, 14], [2, 29], [5, 26], [8, 23], [29, 2],
                       [26, 5], [23, 8], [11, 32], [32, 11], [36, 15], [15, 36]]
 ]
-
+def applyMove(move, currentPos) {
+    def newPos = currentPos.clone()
+    move_dict[move].each { swap ->
+        newPos[swap[0]] = currentPos[swap[1]]
+    }
+    return newPos
+}
 // Generate all valid combinations of depth 2 moves (e.g. ['right_col_rot', 'back_180'] or ['front_clock', 'middle_col_rot'])
 //TEST method. This doesn't need to be in the final script.
 def generateDepth2s() {
-   permSet = [] as Set
-   moves.eachPermutation {
-      permSet.add( [it[0],it[1]] )
+    permList = []
+    moves.each { first ->
+      moves.each { second ->
+        if (first != second) {
+            permList.add( [first, second] )
+        }
+      }
    }
-   return permSet
+   return permList
 }
 
 // Checks if the first two moves are "useless", like moving the front face and then the back face
 def isBadPairing(pair) {
     def badPairings = ['_anticlock', '_clock', 'back', 'front', 'top', 'middle_col', 'middle_row', 'right', 'left', 'col_rot', 'row_rot']
     def badCombos = [['back', 'front'], ['bottom', 'top'], ['left', 'right']]
-    badPairings.each { bp ->
-        if (pair[0].contains(bp) && pair[1].contains(bp)) {
+    for (p = 0; p < badPairings.size();p++) {
+        if (pair[0].contains(badPairings[p]) && pair[1].contains(badPairings[p])) {
             return true
         }
-        badCombos.each { bc ->
-            if ((pair[0].contains(bc[0]) && pair[1].contains(bc[1])) || (pair[0].contains(bc[1]) && pair[1].contains(bc[0]))) {
-                return true
-            }
+    }
+    for (c = 0; c < badCombos.size();c++) {
+        if ((pair[0].contains(badCombos[c][0]) && pair[1].contains(badCombos[c][1])) || (pair[0].contains(badCombos[c][1]) && pair[1].contains(badCombos[c][0]))) {
+            return true
         }
     }
+    print ("Pair $pair is good.")
     return false
 }
 
 // This would be done outside of this script. The actual task is "find_path_with_two_move etc."
 def startFromDepth2(source, target, depth2s) {
-    def count_ = 1
+    println "Starting the two move start pairs.. ${depth2s.size()}"
     depth2s.each { pair ->
-        count_ += 1
         findPathWithTwoMoveStart(pair, source, target)
     }
+
 }
 
 def compare(source, target) {
@@ -253,11 +264,12 @@ def go(runner) {
     // Print the elapsed time
     println("Elapsed time: $hours hrs $minutes mins $seconds seconds")
 }
-
-go('fitEdgeBottomToSide')
-
-sseett = [] as Set
-inputList.eachPermutation {
-   sseett.add( [it[0],it[1]] )
+def runAsIgniteTask() {
+    findPathWithTwoMoveStart(pPair, pSource, pTarget)
 }
+
+go('runAsIgniteTask')
+//res = generateDepth2s()
+//println res
+
 
