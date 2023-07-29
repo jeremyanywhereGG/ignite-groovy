@@ -1,0 +1,12 @@
+{
+   "java.project.referencedLibraries": [
+      "lib/**/*.jar",
+      "/Users/jeremy.meyer/Projects/apache-ignite-2.15.0-bin/libs/groovy-4.0.13.jar",
+      "/Users/jeremy.meyer/Projects/apache-ignite-2.15.0-bin/libs/ignite-core-2.15.0.jar",
+      "/Users/jeremy.meyer/Projects/apache-ignite-2.15.0-bin/libs/cache-api-1.0.0.jar",
+      "/Users/jeremy.meyer/Projects/apache-ignite-2.15.0-bin/libs/annotations-16.0.3.jar",
+      "/Users/jeremy.meyer/Projects/apache-ignite-2.15.0-bin/libs/ignite-log4j2/log4j-core-2.20.0.jar",
+      "/Users/jeremy.meyer/Projects/apache-ignite-2.15.0-bin/libs/ignite-log4j2/ignite-log4j2-2.15.0.jar",
+      "/Users/jeremy.meyer/Projects/apache-ignite-2.15.0-bin/libs/ignite-log4j2/log4j-api-2.20.0.jar"
+   ]
+}
