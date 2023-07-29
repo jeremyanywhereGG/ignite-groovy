@@ -1,3 +1,4 @@
+// Groovy Cube Solver
 cube = (0..41).toList()
 MAX_DEPTH = 6
 TOP_ROW = [9, 10, 11, 12, 30, 31, 32, 33, 0, 1, 2, 20, 41, 21, 22, 23]
