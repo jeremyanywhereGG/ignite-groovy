@@ -1,8 +1,25 @@
 // Groovy Cube Solver
+// #cube is numbered thus.
+// #front face from top left to bottom right in three rows
+// #    0,1,2
+// #    3,4,5
+// #    6,7,8
+// # then along the top from top left.. anti clock wise, around to the left top. 
+// # 9-20
+// # the back face, done the same, but in mirror image, or as if you were looking through \
+// # the front face if it was transparent 
+// # 21,22,23
+// # 24,25,26,
+// # 27,28,29  etc.
+// # then along the top from the top left (looking through the front face) anti clock
+// # around to left top
+// # 30-41
+// #
 cube = (0..41).toList()
 MAX_DEPTH = 6
 TOP_ROW = [9, 10, 11, 12, 30, 31, 32, 33, 0, 1, 2, 20, 41, 21, 22, 23]
-all_positions = (0..MAX_DEPTH).collect { [] as ArrayList }
+//all_positions = (0..MAX_DEPTH).collect { [] as ArrayList }
+solutions = [] as ArrayList<ArrayList<String>>
 
 moves = ['front_anticlock', 'left_col_rot', 'back_anticlock', 'front_180', 'top_row_rot',
              'middle_row_rot', 'right_col_rot', 'back_180', 'front_clock', 'middle_col_rot',
@@ -67,11 +84,10 @@ def isBadPairing(pair) {
             return true
         }
     }
-    print ("Pair $pair is good.")
     return false
 }
 
-// This would be done outside of this script. The actual task is "find_path_with_two_move etc."
+// This would be normally done outside of this script except for testing. The actual task is "find_path_with_two_move etc."
 def startFromDepth2(source, target, depth2s) {
     println "Starting the two move start pairs.. ${depth2s.size()}"
     depth2s.each { pair ->
@@ -83,8 +99,9 @@ def startFromDepth2(source, target, depth2s) {
 def compare(source, target) {
     if (source.size() != target.size()) {
         println("Lengths not equal ${source.size()}, ${target.size()}")
+        return false
     }
-    for (int i = 0; i < source.size(); i++) {
+    for (int i = 0; i < target.size(); i++) {
         if (source[i] != target[i] && target[i] != '?') {
             return false
         }
@@ -93,10 +110,9 @@ def compare(source, target) {
 }
 
 // Recursive. Does the main work. This needs to be called as a single task. A pair of moves are passed
-// with the assumption that they are unique in the problem space and that they have
+// with the assumption that they are unique in the problem space. 
 def findPathWithTwoMoveStart(pairOfMoves, source, target) {
     if (isBadPairing(pairOfMoves)) {
-        println("bad pairing $pairOfMoves")
         return false // reject bad moves straight away.
     }
     def res = applyMove(pairOfMoves[0], source)
@@ -106,7 +122,8 @@ def findPathWithTwoMoveStart(pairOfMoves, source, target) {
 
 def findPath(depth, source, target, breadcrumbs) {
     if (depth > MAX_DEPTH) {
-        //println("Hello max - $depth")
+        // println("Hello max - $depth")
+        // println("..and we have.. ->$breadcrumbs")
         return false
     }
     // Step through all possible moves, if we have the target in any case, stop iterating and return.
@@ -121,10 +138,18 @@ def findPath(depth, source, target, breadcrumbs) {
         }
         def res = applyMove(move, source)
         if (compare(res, target)) {
-            println("${breadcrumbs.size() + 1} ${breadcrumbs + [move]}")
-            found = true
+            solution = [] as ArrayList<String>
+            for (int i = 0; i < breadcrumbs.length; i++) {
+                solution.add(breadcrumbs[i])
+            }
+            solution.add(move)
+            solutions.add(solution)
+            println("Type of solutions is $solutions.class")
+            println("${breadcrumbs.size() + 1}  ${breadcrumbs + [move]}")
+            return true
         }
         findPath(depth + 1, res, target, breadcrumbs + [move])
+
     }
 }
 
@@ -192,7 +217,7 @@ def test1() {
     source = applyMove('middle_row_rot', source)
     source = applyMove('left_col_rot', source)
     source = applyMove('middle_row_rot', source)
-    source = applyMove('right_col_rot', source)
+    //source = applyMove('right_col_rot', source)
     println("after rot: \ntarg... is $target - \nsource. is $source")
     println(compare(source, target))
     //find_path(0, source, target, [])
@@ -218,6 +243,10 @@ def fitEdgeBottomToSide() {
     target[5] = source[7]
     target[7] = '?'
     println("targ... is $target \nsource. is $source")
+    println("Gdumping..")
+    println("    G pair..${['front_anticlock', 'middle_col_rot']}")
+    println("    G source..${target}")
+    println("    G target..${source}")
     startFromDepth2(source, target, generateDepth2s())
 }
 
@@ -238,6 +267,8 @@ def mapToSelf() {
     findPath(0, source, target, [])
 }
 
+// Function definitions for fill, apply_move, and compare go here
+
 def test5() {
     def source = (0..41).toList()
     // Swap last remaining 7 and 5
@@ -252,7 +283,7 @@ def test5() {
 
 def go(runner) {
     println("Running method: $runner()")
-    println("Starting with depth: $MAX_DEPTH..")
+    //println("Starting with depth: $MAX_DEPTH..")
     def start_time = System.currentTimeMillis()
     //mapToSelf()
     this."$runner"()
@@ -263,13 +294,18 @@ def go(runner) {
     def seconds = ((elapsed_time % 60000) / 1000) as int
     // Print the elapsed time
     println("Elapsed time: $hours hrs $minutes mins $seconds seconds")
+    return solutions // an array of arrays.
 }
 def runAsIgniteTask() {
+    println("Starting Task No: $pTaskNo ..")
+    println(" with  pair..${pPair}")
+    // println("    source..${pSource}")
+    // println("    target..${pTarget}")
     findPathWithTwoMoveStart(pPair, pSource, pTarget)
 }
 
 go('runAsIgniteTask')
-//res = generateDepth2s()
+//go('fitEdgeBottomToSide')
 //println res
 
 

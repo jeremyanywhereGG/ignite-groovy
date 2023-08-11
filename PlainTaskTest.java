@@ -1,14 +1,8 @@
-import groovy.lang.GroovyShell;
-import groovy.lang.Script;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Scanner;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
@@ -19,41 +13,50 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.logger.log4j2.Log4J2Logger;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi;
 import org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi;
 import org.apache.ignite.spi.loadbalancing.weightedrandom.WeightedRandomLoadBalancingSpi;
 
-class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
+
+
+public class PlainTaskTest implements IgniteClosure<String, Object> {
    @IgniteInstanceResource
    Ignite ignite;
-   public Object apply(RemotableGroovyScript remoteableScript) {
-      System.out.println("Starting Groovy Script in Ignite Task:");
-      Object res;
+   @JobContextResource
+    private org.apache.ignite.compute.ComputeJobContext jobContext;
+   public static int LOOP_SIZE = 1600000000;
+   public Object apply(String parm) {
+      System.out.println("Starting Ignite Task:");
       try {
-            GroovyShell shell = new GroovyShell(remoteableScript.getBindings());
-            String scriptText = remoteableScript.getScript();
-            Script script = shell.parse(scriptText);
-            res = script.run();
-            System.out.println("Script Done." + res);
+            float f = 7.0f;
+            for (int i=0; i< LOOP_SIZE; i++)
+            {
+               f = f * 2;
+               if (f==0.0) {
+                  System.out.println ("this will never happen");
+               }
+               if (i == (int)LOOP_SIZE/2) {
+                  System.out.println("Java - Task [" +parm + "] halfway done." + (int)LOOP_SIZE/2);
+               }
+            }
+            System.out.println("Task " +parm + " complete");
+            
         } catch (Exception e) {
             // Handling any exceptions
             e.printStackTrace();
             return e.getMessage();
       }
-      return res;
+      String[] parts = (""+ignite.cluster().localNode().consistentId()).split(",");
+      String retVal = " " + parts[parts.length - 1] + " "+ parm;
+
+      return "return val from:" + retVal;  
    }
    
 
-   public static void main (String[] args) {
-      Object res = "";
-      long startTime = System.currentTimeMillis();
-      ArrayList<ArrayList<ArrayList<String>>> solutions = new ArrayList<ArrayList<ArrayList<String>>>();
+   public static void main(String[] args) {
+      Scanner scanner = new Scanner(System.in);
       try {
-         GroovyRunner runner = new GroovyRunner();
-         Map<String, Object> bindings = new HashMap<String, Object>();
-         File f = new File("./CubeSolver.groovy");
-         String scriptText = Files.readString(f.toPath(), StandardCharsets.UTF_8);
-         RemotableGroovyScript rgs;// = new RemotableGroovyScript(scriptText, bindings);
          WeightedRandomLoadBalancingSpi lbspi = new WeightedRandomLoadBalancingSpi();
          lbspi.setUseWeights(true);
          JobStealingCollisionSpi jscspi = new JobStealingCollisionSpi();
@@ -89,9 +92,24 @@ class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
          // cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
          System.out.println("Starting Ignite Client..");
          Ignite ignite = Ignition.start(cfg);
+         while(true) {
+            PlainTaskTest.runIt(ignite);
+            System.out.println("Press Enter to run job again..");
+            scanner.nextLine();
+         }
+      } catch (Exception e) {
+         System.out.println("Loop ended artificially"); 
+         scanner.close();
+         System.exit(0);
+      }
+
+   }
+   private static void runIt(Ignite ignite) {
+      long startTime = System.currentTimeMillis();
+      Object res = "";
+      ArrayList<String> solutions = new ArrayList<String>();
+      try {
          IgniteCompute compute = ignite.compute();
-
-
          String[] moves = {"front_anticlock", "left_col_rot", "back_anticlock", "front_180", "top_row_rot",
          "middle_row_rot", "right_col_rot", "back_180", "front_clock", "middle_col_rot",
          "bottom_row_rot", "back_clock"};
@@ -107,14 +125,9 @@ class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
          for (int i = 0; i < moves.length; i++) {
             for (int j = 0; j < moves.length; j++) {
                if (i != j) { // Avoid pairs with equal elements
-                  String[] pair = {moves[i], moves[j]};
-                  bindings.put("pPair", pair);
-                  bindings.put("pSource", source);
-                  bindings.put("pTarget", target);
-                  bindings.put("pTaskNo", t);
-                  rgs = new RemotableGroovyScript(scriptText, bindings);
-                  System.out.println("Firing off task no."+t++ +" with "+ pair[0] +" "+pair[1]);
-                  groovyTasks.add(compute.applyAsync(runner, rgs));
+                  String parm ="--> TASK ["+t+"]";
+                  System.out.println("Firing off task no."+t++ +" with "+ parm);
+                  groovyTasks.add(compute.applyAsync(new PlainTaskTest(), parm));
                   // System.out.println("Client side result back from task "+ t++ +" is: " + res); 
                } 
                //Thread.sleep(200);
@@ -124,8 +137,8 @@ class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
          for (IgniteFuture<Object> future:groovyTasks) { 
                res = future.get();
                if (res!= null) {
-               if (((ArrayList<ArrayList<String>>)res).size() > 0) {
-                  solutions.add((ArrayList<ArrayList<String>>)res);
+               if (((String)res).length() > 0) {
+                  solutions.add((String)res);
                }
             }
          }
@@ -142,15 +155,12 @@ class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
       // Convert elapsed time to minutes and seconds
       long minutes = elapsedTimeMs / (60 * 1000);
       long seconds = (elapsedTimeMs % (60 * 1000)) / 1000;
-      for (ArrayList<ArrayList<String>> moveListList : solutions) {
-         System.out.println("results:");
-         for (ArrayList<String> moveList : moveListList) {
-               System.out.println("'" +moveList+"' ");
-         }
-         System.out.println("");
+      for (String sol : solutions) {
+         System.out.println("Return:-> " + sol);
       }
       System.out.println("Elapsed Time: " + minutes + " minutes, " + seconds + " seconds");
       
    }
 
 }
+
