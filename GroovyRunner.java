@@ -50,12 +50,10 @@ class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
       ArrayList<ArrayList<ArrayList<String>>> solutions = new ArrayList<ArrayList<ArrayList<String>>>();
       try {
          GroovyRunner runner = new GroovyRunner();
-         Map<String, Object> bindings = new HashMap<String, Object>();
+         
          File f = new File("./CubeSolver.groovy");
          String scriptText = Files.readString(f.toPath(), StandardCharsets.UTF_8);
          RemotableGroovyScript rgs;// = new RemotableGroovyScript(scriptText, bindings);
-         WeightedRandomLoadBalancingSpi lbspi = new WeightedRandomLoadBalancingSpi();
-         lbspi.setUseWeights(true);
          JobStealingCollisionSpi jscspi = new JobStealingCollisionSpi();
 
          jscspi.setWaitJobsThreshold(10);
@@ -72,14 +70,13 @@ class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
          jscspi.setActiveJobsThreshold(50);
 
          // Enable stealing.
-         jscspi.setStealingEnabled(false);
+         jscspi.setStealingEnabled(true);
          // Enable `JobStealingFailoverSpi`
          JobStealingFailoverSpi failoverSpi = new JobStealingFailoverSpi();
 
          IgniteConfiguration cfg = new IgniteConfiguration();
          cfg.setCollisionSpi(jscspi);
          cfg.setFailoverSpi(failoverSpi);
-         cfg.setLoadBalancingSpi(lbspi);
          cfg.setClientMode(true);
          cfg.setPeerClassLoadingEnabled(true);
          IgniteLogger logger = new Log4J2Logger("config/ignite-log4j.xml");
@@ -91,23 +88,18 @@ class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
          Ignite ignite = Ignition.start(cfg);
          IgniteCompute compute = ignite.compute();
 
-
-         String[] moves = {"front_anticlock", "left_col_rot", "back_anticlock", "front_180", "top_row_rot",
-         "middle_row_rot", "right_col_rot", "back_180", "front_clock", "middle_col_rot",
-         "bottom_row_rot", "back_clock"};
          // create source and target for "fit_edge_bottom_to_side"
-         int[] source = CubeUtilities.geFullWildcardPosition();
-         int[] squares = {0, 1, 2, 21, 22, 23, 9, 10, 11, 30, 31, 32, 20, 41, 3, 4, 5, 24, 25, 26, 19, 40, 7};
-         CubeUtilities.fillSpecificSquares(source,squares);
-         int[] target = Arrays.copyOf(source, source.length);
-         target[5] = source[7];
-         target[7] = '?';
+         int[] source = CubeUtilities.moveFitEdgeBottomToSide().get(0);
+         int[] target = CubeUtilities.moveFitEdgeBottomToSide().get(1);
+
          int t = 0;
-         Collection<IgniteFuture<Object>> groovyTasks = new ArrayList<>();            
-         for (int i = 0; i < moves.length; i++) {
-            for (int j = 0; j < moves.length; j++) {
+         Collection<IgniteFuture<Object>> groovyTasks = new ArrayList<>();      
+         //start with all permutations of two moves (filtering out equal ones)      
+         for (int i = 0; i < CubeUtilities.moves.length; i++) {
+            for (int j = 0; j < CubeUtilities.moves.length; j++) {
                if (i != j) { // Avoid pairs with equal elements
-                  String[] pair = {moves[i], moves[j]};
+                  String[] pair = {CubeUtilities.moves[i], CubeUtilities.moves[j]};
+                  Map<String, Object> bindings = new HashMap<String, Object>();
                   bindings.put("pPair", pair);
                   bindings.put("pSource", source);
                   bindings.put("pTarget", target);
@@ -150,7 +142,7 @@ class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
          System.out.println("");
       }
       System.out.println("Elapsed Time: " + minutes + " minutes, " + seconds + " seconds");
-      
+      System.exit(0);
    }
 
 }

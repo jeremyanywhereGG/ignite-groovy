@@ -57,8 +57,8 @@ public class PlainTaskTest implements IgniteClosure<String, Object> {
    public static void main(String[] args) {
       Scanner scanner = new Scanner(System.in);
       try {
-         WeightedRandomLoadBalancingSpi lbspi = new WeightedRandomLoadBalancingSpi();
-         lbspi.setUseWeights(true);
+      //    WeightedRandomLoadBalancingSpi lbspi = new WeightedRandomLoadBalancingSpi();
+      //    lbspi.setUseWeights(true);
          JobStealingCollisionSpi jscspi = new JobStealingCollisionSpi();
 
          jscspi.setWaitJobsThreshold(10);
@@ -82,7 +82,7 @@ public class PlainTaskTest implements IgniteClosure<String, Object> {
          IgniteConfiguration cfg = new IgniteConfiguration();
          cfg.setCollisionSpi(jscspi);
          cfg.setFailoverSpi(failoverSpi);
-         cfg.setLoadBalancingSpi(lbspi);
+         //cfg.setLoadBalancingSpi(lbspi);
          cfg.setClientMode(true);
          cfg.setPeerClassLoadingEnabled(true);
          IgniteLogger logger = new Log4J2Logger("config/ignite-log4j.xml");
