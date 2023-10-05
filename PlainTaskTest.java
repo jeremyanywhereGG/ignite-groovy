@@ -57,32 +57,35 @@ public class PlainTaskTest implements IgniteClosure<String, Object> {
    public static void main(String[] args) {
       Scanner scanner = new Scanner(System.in);
       try {
-      //    WeightedRandomLoadBalancingSpi lbspi = new WeightedRandomLoadBalancingSpi();
-      //    lbspi.setUseWeights(true);
-         JobStealingCollisionSpi jscspi = new JobStealingCollisionSpi();
+          WeightedRandomLoadBalancingSpi lbspi = new WeightedRandomLoadBalancingSpi();
+          lbspi.setUseWeights(true);
+         // JobStealingCollisionSpi jscspi = new JobStealingCollisionSpi();
 
-         jscspi.setWaitJobsThreshold(10);
+         // jscspi.setWaitJobsThreshold(10);
 
-         // Configure message expire time (in milliseconds).
-         jscspi.setMessageExpireTime(1000);
+         // // Configure message expire time (in milliseconds).
+         // jscspi.setMessageExpireTime(1000);
 
-         // Configure stealing attempts number.
-         jscspi.setMaximumStealingAttempts(10);
+         // // Configure stealing attempts number.
+         // jscspi.setMaximumStealingAttempts(10);
 
-         // Configure number of active jobs that are allowed to execute
-         // in parallel. This number should usually be equal to the number
-         // of threads in the pool (default is 100).
-         jscspi.setActiveJobsThreshold(50);
+         // // Configure number of active jobs that are allowed to execute
+         // // in parallel. This number should usually be equal to the number
+         // // of threads in the pool (default is 100).
+         // jscspi.setActiveJobsThreshold(50);
 
-         // Enable stealing.
-         jscspi.setStealingEnabled(false);
-         // Enable `JobStealingFailoverSpi`
-         JobStealingFailoverSpi failoverSpi = new JobStealingFailoverSpi();
+         // // Enable stealing.
+         // jscspi.setStealingEnabled(false);
+         // // Enable `JobStealingFailoverSpi`
+         // JobStealingFailoverSpi failoverSpi = new JobStealingFailoverSpi();
+         // cfg.setCollisionSpi(jscspi);
+         // cfg.setFailoverSpi(failoverSpi);
 
          IgniteConfiguration cfg = new IgniteConfiguration();
-         cfg.setCollisionSpi(jscspi);
-         cfg.setFailoverSpi(failoverSpi);
-         //cfg.setLoadBalancingSpi(lbspi);
+         
+
+
+         cfg.setLoadBalancingSpi(lbspi);
          cfg.setClientMode(true);
          cfg.setPeerClassLoadingEnabled(true);
          IgniteLogger logger = new Log4J2Logger("config/ignite-log4j.xml");

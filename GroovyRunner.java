@@ -42,7 +42,36 @@ class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
       }
       return res;
    }
-   
+   public void injectJobStealingConfig(IgniteConfiguration cfg) {
+      JobStealingCollisionSpi jscspi = new JobStealingCollisionSpi();
+
+      jscspi.setWaitJobsThreshold(10);
+
+      // Configure message expire time (in milliseconds).
+      jscspi.setMessageExpireTime(1000);
+
+      // Configure stealing attempts number.
+      jscspi.setMaximumStealingAttempts(10);
+
+      // Configure number of active jobs that are allowed to execute
+      // in parallel. This number should usually be equal to the number
+      // of threads in the pool (default is 100).
+      jscspi.setActiveJobsThreshold(50);
+
+      // Enable stealing.
+      jscspi.setStealingEnabled(true);
+      // Enable `JobStealingFailoverSpi`
+      JobStealingFailoverSpi failoverSpi = new JobStealingFailoverSpi();
+      cfg.setCollisionSpi(jscspi);
+      cfg.setFailoverSpi(failoverSpi);
+
+   }
+
+   public void injectRandomWeightedConfig(IgniteConfiguration cfg) {
+      WeightedRandomLoadBalancingSpi lbspi = new WeightedRandomLoadBalancingSpi();
+      lbspi.setUseWeights(true);
+      cfg.setLoadBalancingSpi(lbspi);
+   }
 
    public static void main (String[] args) {
       Object res = "";
@@ -54,29 +83,8 @@ class GroovyRunner implements IgniteClosure<RemotableGroovyScript, Object> {
          File f = new File("./CubeSolver.groovy");
          String scriptText = Files.readString(f.toPath(), StandardCharsets.UTF_8);
          RemotableGroovyScript rgs;// = new RemotableGroovyScript(scriptText, bindings);
-         JobStealingCollisionSpi jscspi = new JobStealingCollisionSpi();
-
-         jscspi.setWaitJobsThreshold(10);
-
-         // Configure message expire time (in milliseconds).
-         jscspi.setMessageExpireTime(1000);
-
-         // Configure stealing attempts number.
-         jscspi.setMaximumStealingAttempts(10);
-
-         // Configure number of active jobs that are allowed to execute
-         // in parallel. This number should usually be equal to the number
-         // of threads in the pool (default is 100).
-         jscspi.setActiveJobsThreshold(50);
-
-         // Enable stealing.
-         jscspi.setStealingEnabled(true);
-         // Enable `JobStealingFailoverSpi`
-         JobStealingFailoverSpi failoverSpi = new JobStealingFailoverSpi();
-
          IgniteConfiguration cfg = new IgniteConfiguration();
-         cfg.setCollisionSpi(jscspi);
-         cfg.setFailoverSpi(failoverSpi);
+         runner.injectRandomWeightedConfig(cfg);
          cfg.setClientMode(true);
          cfg.setPeerClassLoadingEnabled(true);
          IgniteLogger logger = new Log4J2Logger("config/ignite-log4j.xml");

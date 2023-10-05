@@ -306,17 +306,3 @@ go('runAsIgniteTask')
 //go('fitEdgeBottomToSide')
 //println res
 
-
-def findPaths(depth, source, target, move) {
-    if (depth > MAX_DEPTH or isSilly(move)) {
-        return false
-    }
-    def res = applyMove(move_dict[move], source)
-    if (compare(res, target)) {
-        solutions.add(solution)
-        return true
-    }
-    for (each_move in move_dict) {
-        findPaths(depth + 1, res, target, move_dict[each_move])
-    }
-}
